@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "leafy-transport", "leafy-transport\leafy-transport.csproj", "{5CCCC4BD-4B50-4206-8490-0BE6A26B2170}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "leafy-transport.api", "leafy-transport.api\leafy-transport.api.csproj", "{5CCCC4BD-4B50-4206-8490-0BE6A26B2170}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "leafy-transport.models", "leafy-transport.models\leafy-transport.models.csproj", "{5B05CDF8-4AE2-454E-A71F-2B7D1CED23DA}"
 EndProject

@@ -4,7 +4,7 @@ namespace leafy_transport.models.Models;
 
 public class Invoice
 {
-    public required Guid Id { get; set; }
+    public required Guid Id { get; set; } = Guid.NewGuid();
     [MaxLength(100)]
     public required string InvoiceNumber { get; set; }
     public required int TotalWeight { get; set; }

@@ -1,8 +1,9 @@
 using leafy_transport.models.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace leafy_transport.Data;
+namespace leafy_transport.api.Data;
 
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser>(options)
@@ -16,6 +17,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     {
         base.OnModelCreating(builder);
 
-        builder.HasDefaultSchema("identity");
+        builder.Entity<IdentityRole>().HasData(
+            new IdentityRole { Id = "00000000-1111-0000-0000-000000000001", Name = models.Models.Roles.Admin, NormalizedName = "ADMIN" },
+            new IdentityRole { Id = "00000000-2222-0000-0000-000000000002", Name = models.Models.Roles.Manager, NormalizedName = "MANAGER" },
+            new IdentityRole { Id = "00000000-3333-0000-0000-000000000003", Name = models.Models.Roles.Employee, NormalizedName = "EMPLOYEE" }
+        );
     }
 }
