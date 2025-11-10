@@ -1,8 +1,12 @@
+using System.Collections.Immutable;
+using System.Text;
 using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints;
 using leafy_transport.models.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 namespace leafy_transport.api;
@@ -13,11 +17,6 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.AddAuthorization(options =>
-        {
-            options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
-        });
-
         builder.Services.AddOpenApi();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -26,6 +25,22 @@ public class Program
         });
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
+
+        builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+        var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+        builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters.ValidIssuer = jwtSettings?.Issuer;
+                options.TokenValidationParameters.ValidAudience = jwtSettings?.Audience;
+                options.TokenValidationParameters.IssuerSigningKey =
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings?.SecretKey!));
+            });
+        builder.Services.AddAuthorization();
 
         builder.Services.RegisterModules();
         
@@ -47,6 +62,7 @@ public class Program
 
         app.UseHttpsRedirection();
 
+        app.UseAuthentication();
         app.UseAuthorization();
         
         app.MapEndpoints();
