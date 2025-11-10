@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using FluentValidation;
 using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints;
 using leafy_transport.api.Infrastructure;
@@ -26,6 +27,8 @@ public class Program
         });
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
+
+        builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly, includeInternalTypes:true);
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();

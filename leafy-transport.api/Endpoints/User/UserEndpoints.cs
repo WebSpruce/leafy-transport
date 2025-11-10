@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text;
+using FluentValidation;
 using leafy_transport.api.Data;
 using leafy_transport.api.Interfaces;
+using leafy_transport.api.Validators.User;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -21,9 +24,27 @@ public class UserEndpoints : IModule
         users.MapPost("users", async (
             RegisterRequest request, 
             ApplicationDbContext dbContext,
-            UserManager<ApplicationUser> userManager) =>
+            UserManager<ApplicationUser> userManager,
+            IValidator<RegisterRequest> validator,
+            CancellationToken token) =>
         {
-            await using var transaction = await dbContext.Database.BeginTransactionAsync();
+            if (token.IsCancellationRequested)
+                return Results.StatusCode(499);
+            
+            var validationResult = validator.Validate(request);
+            if (!validationResult.IsValid)
+            {
+                var problems = new HttpValidationProblemDetails(validationResult.ToDictionary())
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = "/users"
+                };
+                return Results.Problem(problems);
+            }
+            
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(token);
             var user = new ApplicationUser
             {
                 UserName = request.Email,
@@ -45,7 +66,7 @@ public class UserEndpoints : IModule
                 return Results.BadRequest(roleResult.Errors);
             }
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(token);
 
             return Results.Ok();
         }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
@@ -54,11 +75,25 @@ public class UserEndpoints : IModule
             LoginRequest request,
             UserManager<ApplicationUser> userManager,
             IOptions<JwtSettings> jwtSettings,
+            IValidator<LoginRequest> validator,
             CancellationToken token) =>
         {
             if (token.IsCancellationRequested)
                 return Results.StatusCode(499);
 
+            var validationResult = validator.Validate(request);
+            if (!validationResult.IsValid)
+            {
+                var problems = new HttpValidationProblemDetails(validationResult.ToDictionary())
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = "/users/login"
+                };
+                return Results.Problem(problems);
+            }
+            
             var config = jwtSettings.Value;
             var user = await userManager.FindByEmailAsync(request.Email);
 
