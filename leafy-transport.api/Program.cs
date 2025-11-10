@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Text;
 using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints;
+using leafy_transport.api.Infrastructure;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -26,6 +27,9 @@ public class Program
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+        builder.Services.AddProblemDetails();
+        
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
         var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
         builder.Services.AddAuthentication(options =>
@@ -61,6 +65,8 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+
+        app.UseExceptionHandler();
 
         app.UseAuthentication();
         app.UseAuthorization();
