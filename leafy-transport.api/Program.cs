@@ -1,9 +1,10 @@
-using System.Collections.Immutable;
 using System.Text;
 using FluentValidation;
 using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints;
 using leafy_transport.api.Infrastructure;
+using leafy_transport.api.Interfaces.User;
+using leafy_transport.api.Repositories.User;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -50,6 +51,7 @@ public class Program
         builder.Services.AddAuthorization();
 
         builder.Services.RegisterModules();
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
         
         var app = builder.Build();
         
