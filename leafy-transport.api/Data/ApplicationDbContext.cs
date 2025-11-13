@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace leafy_transport.api.Data;
 
-public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Vehicle> Vehicles { get; set; }
