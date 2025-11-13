@@ -4,6 +4,7 @@ using System.Text;
 using FluentValidation;
 using leafy_transport.api.Data;
 using leafy_transport.api.Interfaces;
+using leafy_transport.api.Interfaces.User;
 using leafy_transport.api.Validators.User;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Identity;
@@ -23,18 +24,17 @@ public class UserEndpoints : IModule
 
         users.MapPost("users", async (
             RegisterRequest request, 
-            ApplicationDbContext dbContext,
-            UserManager<ApplicationUser> userManager,
-            IValidator<RegisterRequest> validator,
+            IUserRepository userRepository,
             CancellationToken token) =>
         {
-            if (token.IsCancellationRequested)
+            var result = await userRepository.RegisterUserAsync(request, token);
+
+            if (result.IsCancelled)
                 return Results.StatusCode(499);
-            
-            var validationResult = validator.Validate(request);
-            if (!validationResult.IsValid)
+
+            if (result.IsValidationFailure)
             {
-                var problems = new HttpValidationProblemDetails(validationResult.ToDictionary())
+                var problems = new HttpValidationProblemDetails(result.ValidationErrors)
                 {
                     Status = StatusCodes.Status400BadRequest,
                     Title = "Validation failed",
@@ -43,30 +43,9 @@ public class UserEndpoints : IModule
                 };
                 return Results.Problem(problems);
             }
-            
-            await using var transaction = await dbContext.Database.BeginTransactionAsync(token);
-            var user = new ApplicationUser
-            {
-                UserName = request.Email,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                CreatedAt = DateTime.UtcNow,
-            };
-            
-            IdentityResult identityResult = await userManager.CreateAsync(user, request.Password);
-            if (!identityResult.Succeeded)
-            {
-                return Results.BadRequest(identityResult.Errors);
-            }
 
-            IdentityResult roleResult = await userManager.AddToRoleAsync(user, request.Role);
-            if (!roleResult.Succeeded)
-            {
-                return Results.BadRequest(roleResult.Errors);
-            }
-
-            await transaction.CommitAsync(token);
+            if (!result.IsSuccess)
+                return Results.BadRequest(result.Errors);
 
             return Results.Ok();
         }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
