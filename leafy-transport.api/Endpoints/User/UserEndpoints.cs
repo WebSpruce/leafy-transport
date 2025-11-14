@@ -22,7 +22,7 @@ public class UserEndpoints : IModule
             .MapGroup(ApiRoutes.Users.GroupName)
             .WithTags("Users");
 
-        users.MapPost("users", async (
+        users.MapPost("", async (
             RegisterRequest request, 
             IUserRepository userRepository,
             CancellationToken token) =>
