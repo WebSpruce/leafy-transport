@@ -6,6 +6,7 @@ using leafy_transport.api.Endpoints.User;
 using leafy_transport.api.Interfaces.User;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -18,15 +19,18 @@ public class UserRepository : IUserRepository
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IValidator<RegisterRequest> _validator;
     private readonly IValidator<LoginRequest> _validatorLogin;
+    private readonly IValidator<UpdateRequest> _validatorUpdate;
     private readonly IOptions<JwtSettings> _jwtSettings;
 
     public UserRepository(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager, 
-        IValidator<RegisterRequest> validator, IValidator<LoginRequest> validatorLogin, IOptions<JwtSettings> jwtSettings)
+        IValidator<RegisterRequest> validator, IValidator<LoginRequest> validatorLogin, IValidator<UpdateRequest> validatorUpdate, 
+        IOptions<JwtSettings> jwtSettings)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _validator = validator;
         _validatorLogin = validatorLogin;
+        _validatorUpdate = validatorUpdate;
         _jwtSettings = jwtSettings;
     }
     public async Task<Result> RegisterUserAsync(RegisterRequest request, CancellationToken token)
@@ -108,5 +112,52 @@ public class UserRepository : IUserRepository
         string accessToken = tokenHandler.CreateToken(tokenDescriptor);
 
         return Result.Success(new List<object>(){accessToken});
+    }
+
+    public async Task<Result> UpdateAsync(string id, UpdateRequest request, CancellationToken token)
+    {
+        if (token.IsCancellationRequested)
+            return Result.Cancelled();
+
+        var validationResult = await _validatorUpdate.ValidateAsync(request, token);
+        if (!validationResult.IsValid)
+            return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id, token);
+
+        if (user is null)
+            return Result.Failure(new List<object>() { "There is no user with provided Id" });
+
+        if (request.FirstName is not null)
+            user.FirstName = request.FirstName;
+        if (request.LastName is not null)
+            user.LastName = request.LastName;
+        if (request.UserName is not null)
+            user.UserName = request.UserName;
+        if (request.VehicleId is not null)
+            user.VehicleId = request.VehicleId;
+        if (request.PhoneNumber is not null)
+            user.PhoneNumber = request.PhoneNumber;
+
+        await _dbContext.SaveChangesAsync(token);
+        
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteAsync(string id, CancellationToken token)
+    {
+        if (token.IsCancellationRequested)
+            return Result.Cancelled();
+        
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id, token);
+
+        if (user is null)
+            return Result.Failure(new List<object>() { "There is no user with provided Id" });
+
+        _dbContext.Users.Remove(user);
+
+        await _dbContext.SaveChangesAsync(token);
+
+        return Result.Success();
     }
 }

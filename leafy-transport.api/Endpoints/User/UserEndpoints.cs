@@ -78,5 +78,52 @@ public class UserEndpoints : IModule
             
             return Results.Ok();
         }).RequireAuthorization();
+
+        users.MapPatch("/{id}", async (
+            string id,
+            UpdateRequest request,
+            IUserRepository userRepository,
+            CancellationToken token
+            ) =>
+        {
+            var result = await userRepository.UpdateAsync(id, request, token);
+
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.IsValidationFailure)
+            {
+                var problem = new HttpValidationProblemDetails(result.ValidationErrors)
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = $"/users/{id}"
+                };
+                return Results.Problem(problem);
+            }
+            
+            if (result.Errors?.Any() == true && result.Errors.Contains("There is no user with provided Id"))
+                return Results.NotFound("There is no user with provided Id");
+
+            return Results.Ok();
+        });
+
+        users.MapDelete("/{id}", async (
+            string id,
+            IUserRepository userRepository,
+            CancellationToken token
+        ) =>
+        {
+            var result = await userRepository.DeleteAsync(id, token);
+
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.Errors?.Any() == true && result.Errors.Contains("There is no user with provided Id"))
+                return Results.NotFound("There is no user with provided Id");
+            
+            return Results.Ok();
+        });
     }
 }

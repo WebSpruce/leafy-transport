@@ -20,11 +20,11 @@ internal class RegisterRequestValidator : AbstractValidator<RegisterRequest>
         
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("FirstName is empty")
-            .MinimumLength(2).WithMessage("FirstName must contains at least 2 characters");
+            .MinimumLength(2).WithMessage("FirstName must contain at least 2 characters");
         
         RuleFor(x => x.LastName)
             .NotEmpty().WithMessage("LastName is empty")
-            .MinimumLength(2).WithMessage("LastName must contains at least 2 characters");
+            .MinimumLength(2).WithMessage("LastName must contain at least 2 characters");
         
         RuleFor(x => x.Role)
             .NotEmpty().WithMessage("Role is empty");
