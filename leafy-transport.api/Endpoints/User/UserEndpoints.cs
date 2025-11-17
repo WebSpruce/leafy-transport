@@ -1,16 +1,6 @@
-using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
-using System.Text;
-using FluentValidation;
-using leafy_transport.api.Data;
 using leafy_transport.api.Interfaces;
 using leafy_transport.api.Interfaces.User;
-using leafy_transport.api.Validators.User;
 using leafy_transport.models.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 
 namespace leafy_transport.api.Endpoints.User;
 
@@ -52,18 +42,16 @@ public class UserEndpoints : IModule
         
         users.MapPost("login", async (
             LoginRequest request,
-            UserManager<ApplicationUser> userManager,
-            IOptions<JwtSettings> jwtSettings,
-            IValidator<LoginRequest> validator,
-            CancellationToken token) =>
+            IUserRepository userRepository,
+        CancellationToken token) =>
         {
-            if (token.IsCancellationRequested)
+            Result result = await userRepository.LoginAsync(request, token);
+            if (result.IsCancelled)
                 return Results.StatusCode(499);
-
-            var validationResult = validator.Validate(request);
-            if (!validationResult.IsValid)
+            
+            if (result.IsValidationFailure)
             {
-                var problems = new HttpValidationProblemDetails(validationResult.ToDictionary())
+                var problems = new HttpValidationProblemDetails(result.ValidationErrors)
                 {
                     Status = StatusCodes.Status400BadRequest,
                     Title = "Validation failed",
@@ -72,39 +60,14 @@ public class UserEndpoints : IModule
                 };
                 return Results.Problem(problems);
             }
-            
-            var config = jwtSettings.Value;
-            var user = await userManager.FindByEmailAsync(request.Email);
 
-            if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
-            {
+            if(!result.IsSuccess && result.Errors.Any() && result.Errors.Contains("Unauthorized"))
                 return Results.Unauthorized();
-            }
-
-            var roles = await userManager.GetRolesAsync(user);
-
-            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SecretKey));
-            var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-
-            List<Claim> claims =
-            [
-                new(JwtRegisteredClaimNames.Sub, user.Id),
-                new(JwtRegisteredClaimNames.Email, user.Email!),
-                ..roles.Select(r => new Claim(ClaimTypes.Role, r))
-            ];
-
-            var tokenDescriptor = new SecurityTokenDescriptor()
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(config.ExpirationInMinutes),
-                SigningCredentials = credentials,
-                Issuer = config.Issuer,
-                Audience = config.Audience
-            };
-
-            var tokenHandler = new JsonWebTokenHandler();
-            string accessToken = tokenHandler.CreateToken(tokenDescriptor);
             
+            string? accessToken = null;
+            if (result.IsSuccess && result.Values.Any())
+                accessToken = result.Values?.FirstOrDefault()?.ToString();
+
             return Results.Ok(new { accessToken });
         });
 

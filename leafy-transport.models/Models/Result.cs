@@ -7,8 +7,9 @@ public class Result
     public bool IsValidationFailure => ValidationErrors?.Any() == true;
     public Dictionary<string, string[]> ValidationErrors { get; private set; }
     public IEnumerable<object> Errors { get; private set; }
+    public IEnumerable<object> Values { get; private set; }
 
-    public static Result Success() => new Result { IsSuccess = true };
+    public static Result Success(IEnumerable<object> values = null) => new Result { IsSuccess = true, Values = values };
     public static Result Failure(IEnumerable<object> errors = null) => new Result { IsSuccess = false, Errors = errors };
     public static Result ValidationFailure(Dictionary<string, string[]> validationErrors) => new Result { IsSuccess = false, ValidationErrors = validationErrors };
     public static Result Cancelled() => new Result { IsCancelled = true, IsSuccess = false };
