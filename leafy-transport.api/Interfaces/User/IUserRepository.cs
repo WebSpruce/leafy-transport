@@ -7,6 +7,7 @@ public interface IUserRepository
 {
     Task<Result> RegisterUserAsync(RegisterRequest request, CancellationToken token);
     Task<Result> LoginAsync(LoginRequest request, CancellationToken token);
+    Task<Result> GetAllAsync(GetRequest request, CancellationToken token);
     Task<Result> UpdateAsync(string id, UpdateRequest request, CancellationToken token);
     Task<Result> DeleteAsync(string id, CancellationToken token);
 }

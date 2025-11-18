@@ -1,6 +1,7 @@
 using leafy_transport.api.Interfaces;
 using leafy_transport.api.Interfaces.User;
 using leafy_transport.models.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace leafy_transport.api.Endpoints.User;
 
@@ -78,6 +79,54 @@ public class UserEndpoints : IModule
             
             return Results.Ok();
         }).RequireAuthorization();
+        
+        users.MapGet("", async (
+            string? id,
+            string? email,
+            string? firstName,
+            string? lastName,
+            string? userName,
+            string? phoneNumber,
+            Guid? vehicleId,
+            string? roleName,
+            DateTime? createdAt,
+            [FromServices] IUserRepository userRepository,
+            CancellationToken token
+        ) =>
+        {
+            var request = new GetRequest(
+                Id: id,
+                Email: email,
+                FirstName: firstName,
+                LastName: lastName,
+                UserName: userName,
+                PhoneNumber: phoneNumber,
+                VehicleId: vehicleId,
+                RoleName: roleName,
+                CreatedAt: createdAt
+            );
+            var result = await userRepository.GetAllAsync(request, token);
+
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.IsValidationFailure)
+            {
+                var problem = new HttpValidationProblemDetails(result.ValidationErrors)
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = $"/users"
+                };
+                return Results.Problem(problem);
+            }
+            
+            if (result.Errors?.Any() == true)
+                return Results.NotFound(result.Errors?.FirstOrDefault());
+
+            return Results.Ok(result.Values);
+        });
 
         users.MapPatch("/{id}", async (
             string id,

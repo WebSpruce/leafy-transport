@@ -20,17 +20,19 @@ public class UserRepository : IUserRepository
     private readonly IValidator<RegisterRequest> _validator;
     private readonly IValidator<LoginRequest> _validatorLogin;
     private readonly IValidator<UpdateRequest> _validatorUpdate;
+    private readonly IValidator<GetRequest> _validatorGet;
     private readonly IOptions<JwtSettings> _jwtSettings;
 
     public UserRepository(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager, 
         IValidator<RegisterRequest> validator, IValidator<LoginRequest> validatorLogin, IValidator<UpdateRequest> validatorUpdate, 
-        IOptions<JwtSettings> jwtSettings)
+        IValidator<GetRequest> validatorGet, IOptions<JwtSettings> jwtSettings)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _validator = validator;
         _validatorLogin = validatorLogin;
         _validatorUpdate = validatorUpdate;
+        _validatorGet = validatorGet;
         _jwtSettings = jwtSettings;
     }
     public async Task<Result> RegisterUserAsync(RegisterRequest request, CancellationToken token)
@@ -144,6 +146,39 @@ public class UserRepository : IUserRepository
         return Result.Success();
     }
 
+    public async Task<Result> GetAllAsync(GetRequest request, CancellationToken token)
+    {
+        if (token.IsCancellationRequested)
+            return Result.Cancelled();
+
+        var validationResult = _validatorGet.Validate(request);
+        if (!validationResult.IsValid)
+            return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
+
+        IQueryable<ApplicationUser> users = _userManager.Users;
+        
+        if (!string.IsNullOrEmpty(request.RoleName))
+        {
+            var usersInRole = await _userManager.GetUsersInRoleAsync(request.RoleName);
+            users = usersInRole.AsQueryable();
+        }
+        
+        users = users
+            .Where(user =>
+                (string.IsNullOrEmpty(request.Id) || user.Id == request.Id) &&
+                (string.IsNullOrEmpty(request.UserName) || user.UserName == request.UserName) &&
+                (string.IsNullOrEmpty(request.FirstName) || user.FirstName == request.FirstName) &&
+                (string.IsNullOrEmpty(request.LastName) || user.LastName == request.LastName) &&
+                (string.IsNullOrEmpty(request.Email) || user.Email == request.Email) &&
+                (string.IsNullOrEmpty(request.PhoneNumber) || user.PhoneNumber == request.PhoneNumber) && 
+                (!request.VehicleId.HasValue || user.VehicleId == request.VehicleId) && 
+                (!request.CreatedAt.HasValue || (request.CreatedAt.HasValue && user.CreatedAt.Date == request.CreatedAt.Value.Date) )
+            )
+            .AsQueryable();
+
+        return Result.Success(users);
+    }
+    
     public async Task<Result> DeleteAsync(string id, CancellationToken token)
     {
         if (token.IsCancellationRequested)
