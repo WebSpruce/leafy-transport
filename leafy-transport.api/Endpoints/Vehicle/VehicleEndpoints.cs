@@ -1,0 +1,74 @@
+using leafy_transport.api.Interfaces;
+using leafy_transport.api.Interfaces.Vehicle;
+using leafy_transport.models.Models;
+
+namespace leafy_transport.api.Endpoints.Vehicle;
+
+public class VehicleEndpoints : IModule
+{
+    public void RegisterEndpoints(IEndpointRouteBuilder app)
+    {
+        var vehicles = app.MapGroup(ApiRoutes.Vehicles.GroupName)
+            .WithTags("Vehicles");
+        
+        vehicles.MapPost("", async (
+            CreateRequest request, 
+            IVehicleRepository vehiclesRepository,
+            CancellationToken token) =>
+        {
+            var result = await vehiclesRepository.CreateVehiclesAsync(request, token);
+
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.IsValidationFailure)
+            {
+                var problems = new HttpValidationProblemDetails(result.ValidationErrors)
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = "/users"
+                };
+                return Results.Problem(problems);
+            }
+
+            if (!result.IsSuccess)
+                return Results.BadRequest(result.Errors);
+
+            return Results.Ok(result.Values);
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
+
+        vehicles.MapGet("", async (
+                Guid? Id, 
+                string? Type, 
+                double? MaxWeight, 
+                string? Status,
+                IVehicleRepository vehiclesRepository,
+                CancellationToken token) =>
+        {
+            var request = new GetRequest(Id, Type, MaxWeight, Status);
+            var result = await vehiclesRepository.GetVehiclesAsync(request, token);
+            
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.IsValidationFailure)
+            {
+                var problem = new HttpValidationProblemDetails(result.ValidationErrors)
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = $"/vehicles"
+                };
+                return Results.Problem(problem);
+            }
+            
+            if (result.Errors?.Any() == true)
+                return Results.NotFound(result.Errors?.FirstOrDefault());
+
+            return Results.Ok(result.Values);
+        });
+    }
+}

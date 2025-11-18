@@ -4,7 +4,9 @@ using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints;
 using leafy_transport.api.Infrastructure;
 using leafy_transport.api.Interfaces.User;
+using leafy_transport.api.Interfaces.Vehicle;
 using leafy_transport.api.Repositories.User;
+using leafy_transport.api.Repositories.Vehicle;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -53,6 +55,8 @@ public class Program
         builder.Services.RegisterModules();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         
+        builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+
         var app = builder.Build();
         
         if (app.Environment.IsDevelopment())
