@@ -166,10 +166,10 @@ public class UserRepository : IUserRepository
         users = users
             .Where(user =>
                 (string.IsNullOrEmpty(request.Id) || user.Id == request.Id) &&
-                (string.IsNullOrEmpty(request.UserName) || user.UserName == request.UserName) &&
-                (string.IsNullOrEmpty(request.FirstName) || user.FirstName == request.FirstName) &&
-                (string.IsNullOrEmpty(request.LastName) || user.LastName == request.LastName) &&
-                (string.IsNullOrEmpty(request.Email) || user.Email == request.Email) &&
+                (string.IsNullOrEmpty(request.UserName) || user.UserName.ToLower() == request.UserName.ToLower()) &&
+                (string.IsNullOrEmpty(request.FirstName) || user.FirstName.ToLower() == request.FirstName.ToLower()) &&
+                (string.IsNullOrEmpty(request.LastName) || user.LastName.ToLower() == request.LastName.ToLower()) &&
+                (string.IsNullOrEmpty(request.Email) || user.Email.ToLower() == request.Email.ToLower()) &&
                 (string.IsNullOrEmpty(request.PhoneNumber) || user.PhoneNumber == request.PhoneNumber) && 
                 (!request.VehicleId.HasValue || user.VehicleId == request.VehicleId) && 
                 (!request.CreatedAt.HasValue || (request.CreatedAt.HasValue && user.CreatedAt.Date == request.CreatedAt.Value.Date) )
