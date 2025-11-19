@@ -13,11 +13,13 @@ public class VehicleRepository : IVehicleRepository
     private readonly ApplicationDbContext _dbContext;
     private readonly IValidator<GetRequest> _validatorGet;
     private readonly IValidator<CreateRequest> _validatorCreate;
-    public VehicleRepository(ApplicationDbContext dbContext, IValidator<GetRequest> validatorGet, IValidator<CreateRequest> validatorCreate)
+    private readonly IValidator<UpdateRequest> _validatorUpdate;
+    public VehicleRepository(ApplicationDbContext dbContext, IValidator<GetRequest> validatorGet, IValidator<CreateRequest> validatorCreate, IValidator<UpdateRequest> validatorUpdate)
     {
         _dbContext = dbContext;
         _validatorGet = validatorGet;
         _validatorCreate = validatorCreate;
+        _validatorUpdate = validatorUpdate;
     }
 
     public async Task<Result<models.Models.Vehicle>> CreateVehiclesAsync(CreateRequest request, CancellationToken token)
@@ -64,5 +66,46 @@ public class VehicleRepository : IVehicleRepository
         var result = await Pagination.Paginate(vehicles, request.pagination?.pageNumber, request.pagination?.pageSize, token);
 
         return Result.Success(result);
+    }
+
+    public async Task<Result> UpdateVehicleAsync(Guid id, UpdateRequest request, CancellationToken token)
+    {
+        if (token.IsCancellationRequested)
+            return Result.Cancelled();
+
+        var validationResult = _validatorUpdate.Validate(request);
+        if (!validationResult.IsValid)
+            return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
+
+        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id);
+        if (vehicle is null)
+            return Result.Failure(new List<object>() { "There is no vehicle with the provided Id" });
+
+        if (request.Type is not null)
+            vehicle.Type = request.Type;
+        if (request.Status is not null)
+            vehicle.Status = request.Status;
+        if (request.MaxWeight is not null)
+            vehicle.MaxWeight = (double)request.MaxWeight;
+
+        await _dbContext.SaveChangesAsync(token);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteVehicleAsync(Guid id, CancellationToken token)
+    {
+        if (token.IsCancellationRequested)
+            return Result.Cancelled();
+        
+        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id);
+        if (vehicle is null)
+            return Result.Failure(new List<object>() { "There is no vehicle with the provided Id" });
+
+        _dbContext.Vehicles.Remove(vehicle);
+
+        await _dbContext.SaveChangesAsync(token);
+
+        return Result.Success();
     }
 }

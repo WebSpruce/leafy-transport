@@ -72,5 +72,52 @@ public class VehicleEndpoints : IModule
 
             return Results.Ok(result.Value);
         });
+
+        vehicles.MapPatch("/{id}", async (
+            Guid id,
+            UpdateRequest request,
+            IVehicleRepository vehicleRepository,
+            CancellationToken token
+            ) =>
+        {
+            var result = await vehicleRepository.UpdateVehicleAsync(id, request, token);
+
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.IsValidationFailure)
+            {
+                var problem = new HttpValidationProblemDetails(result.ValidationErrors)
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed",
+                    Detail = "Validation errors occurred",
+                    Instance = $"/vehicles/{id}"
+                };
+                return Results.Problem(problem);
+            }
+
+            if (result.Errors?.Any() == true)
+                return Results.NotFound(result.Errors?.FirstOrDefault());
+
+            return Results.Ok();
+        });
+        
+        vehicles.MapDelete("/{id}", async (
+            Guid id,
+            IVehicleRepository vehicleRepository,
+            CancellationToken token
+        ) =>
+        {
+            var result = await vehicleRepository.DeleteVehicleAsync(id, token);
+
+            if (result.IsCancelled)
+                return Results.StatusCode(499);
+
+            if (result.Errors?.Any() == true)
+                return Results.NotFound(result.Errors?.FirstOrDefault());
+
+            return Results.Ok();
+        });
     }
 }
