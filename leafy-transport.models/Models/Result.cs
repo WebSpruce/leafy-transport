@@ -2,15 +2,44 @@ namespace leafy_transport.models.Models;
 
 public class Result
 {
-    public bool IsSuccess { get; private set; }
-    public bool IsCancelled { get; private set; }
+    public bool IsSuccess { get; protected init; }
+    public bool IsFailure => !IsSuccess;
     public bool IsValidationFailure => ValidationErrors?.Any() == true;
-    public Dictionary<string, string[]> ValidationErrors { get; private set; }
+    public bool IsCancelled { get; protected init; }
     public IEnumerable<object> Errors { get; private set; }
-    public IEnumerable<object> Values { get; private set; }
+    public Dictionary<string, string[]>? ValidationErrors { get; protected init; }
 
-    public static Result Success(IEnumerable<object> values = null) => new Result { IsSuccess = true, Values = values };
-    public static Result Failure(IEnumerable<object> errors = null) => new Result { IsSuccess = false, Errors = errors };
-    public static Result ValidationFailure(Dictionary<string, string[]> validationErrors) => new Result { IsSuccess = false, ValidationErrors = validationErrors };
-    public static Result Cancelled() => new Result { IsCancelled = true, IsSuccess = false };
+   
+
+    public static Result Success() => new() { IsSuccess = true };
+    public static Result<T> Success<T>(T value) => new(value);
+
+    public static Result ValidationFailure(Dictionary<string, string[]> errors) => 
+        new() { IsSuccess = false, ValidationErrors = errors };
+    public static Result<T> ValidationFailure<T>(Dictionary<string, string[]> errors) => 
+        new(default!) { IsSuccess = false, ValidationErrors = errors };
+    
+    public static Result Failure(IEnumerable<object> errors) => 
+        new() { IsSuccess = false, Errors = errors };
+    public static Result<T> Failure<T>(IEnumerable<object> errors) => 
+        new(default!) { IsSuccess = false, Errors = errors };
+
+    public static Result Cancelled() => 
+        new() { IsSuccess = false, IsCancelled = true };
+    public static Result<T> Cancelled<T>() => 
+        new(default!) { IsSuccess = false, IsCancelled = true };
+}
+public class Result<T> : Result
+{
+    public T Value { get; }
+    protected internal Result(T value)
+    {
+        IsSuccess = true;
+        Value = value;
+    }
+    protected internal Result()
+    {
+        IsSuccess = false;
+        Value = default!;
+    }
 }

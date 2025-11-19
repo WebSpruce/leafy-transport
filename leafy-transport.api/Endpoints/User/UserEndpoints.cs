@@ -46,7 +46,7 @@ public class UserEndpoints : IModule
             IUserRepository userRepository,
         CancellationToken token) =>
         {
-            Result result = await userRepository.LoginAsync(request, token);
+            var result = await userRepository.LoginAsync(request, token);
             if (result.IsCancelled)
                 return Results.StatusCode(499);
             
@@ -62,14 +62,15 @@ public class UserEndpoints : IModule
                 return Results.Problem(problems);
             }
 
-            if(!result.IsSuccess && result.Errors.Any() && result.Errors.Contains("Unauthorized"))
-                return Results.Unauthorized();
-            
-            string? accessToken = null;
-            if (result.IsSuccess && result.Values.Any())
-                accessToken = result.Values?.FirstOrDefault()?.ToString();
+            if (result.IsFailure)
+            {
+                if (result.Errors?.Any(e => e.ToString() == "Unauthorized") == true)
+                    return Results.Unauthorized();
+        
+                return Results.BadRequest(new { errors = result.Errors });
+            }
 
-            return Results.Ok(new { accessToken });
+            return Results.Ok(new { accessToken = result.Value });
         });
 
         users.MapGet("token-check", (CancellationToken token) =>
@@ -90,6 +91,8 @@ public class UserEndpoints : IModule
             Guid? vehicleId,
             string? roleName,
             DateTime? createdAt,
+            int? page,
+            int? pageSize,
             [FromServices] IUserRepository userRepository,
             CancellationToken token
         ) =>
@@ -103,7 +106,8 @@ public class UserEndpoints : IModule
                 PhoneNumber: phoneNumber,
                 VehicleId: vehicleId,
                 RoleName: roleName,
-                CreatedAt: createdAt
+                CreatedAt: createdAt,
+                new PaginationRequest(page, pageSize)
             );
             var result = await userRepository.GetAllAsync(request, token);
 
@@ -125,7 +129,7 @@ public class UserEndpoints : IModule
             if (result.Errors?.Any() == true)
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
-            return Results.Ok(result.Values);
+            return Results.Ok(result.Value);
         });
 
         users.MapPatch("/{id}", async (

@@ -3,6 +3,7 @@ using System.Text;
 using FluentValidation;
 using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints.User;
+using leafy_transport.api.Infrastructure;
 using leafy_transport.api.Interfaces.User;
 using leafy_transport.models.Models;
 using Microsoft.AspNetCore.Identity;
@@ -71,14 +72,14 @@ public class UserRepository : IUserRepository
         return Result.Success();
     }
 
-    public async Task<Result> LoginAsync(LoginRequest request, CancellationToken token)
+    public async Task<Result<string>> LoginAsync(LoginRequest request, CancellationToken token)
     {
         if (token.IsCancellationRequested)
-            return Result.Cancelled();
+            return Result.Cancelled<string>();
 
         var validationResult = _validatorLogin.Validate(request);
         if (!validationResult.IsValid)
-            return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
+            return Result.ValidationFailure<string>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
         
         var config = _jwtSettings.Value;
         var user = await _userManager.FindByEmailAsync(request.Email);
@@ -86,7 +87,7 @@ public class UserRepository : IUserRepository
         if (user is null || !await _userManager.CheckPasswordAsync(user, request.Password))
         {
             List<string> errors = new List<string>() { "Unauthorized" };
-            return Result.Failure(errors);
+            return Result.Failure<string>(errors);
         }
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -113,7 +114,7 @@ public class UserRepository : IUserRepository
         var tokenHandler = new JsonWebTokenHandler();
         string accessToken = tokenHandler.CreateToken(tokenDescriptor);
 
-        return Result.Success(new List<object>(){accessToken});
+        return Result.Success(accessToken);
     }
 
     public async Task<Result> UpdateAsync(string id, UpdateRequest request, CancellationToken token)
@@ -146,14 +147,14 @@ public class UserRepository : IUserRepository
         return Result.Success();
     }
 
-    public async Task<Result> GetAllAsync(GetRequest request, CancellationToken token)
+    public async Task<Result<PagedList<ApplicationUser>>> GetAllAsync(GetRequest request, CancellationToken token)
     {
         if (token.IsCancellationRequested)
-            return Result.Cancelled();
+            return Result.Cancelled<PagedList<ApplicationUser>>();
 
         var validationResult = _validatorGet.Validate(request);
         if (!validationResult.IsValid)
-            return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
+            return Result.ValidationFailure<PagedList<ApplicationUser>>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
         IQueryable<ApplicationUser> users = _userManager.Users;
         
@@ -175,8 +176,10 @@ public class UserRepository : IUserRepository
                 (!request.CreatedAt.HasValue || (request.CreatedAt.HasValue && user.CreatedAt.Date == request.CreatedAt.Value.Date) )
             )
             .AsQueryable();
+        
+        var result = await Pagination.Paginate(users, request.pagination?.pageNumber, request.pagination?.pageSize, token);
 
-        return Result.Success(users);
+        return Result.Success(result);
     }
     
     public async Task<Result> DeleteAsync(string id, CancellationToken token)

@@ -36,18 +36,20 @@ public class VehicleEndpoints : IModule
             if (!result.IsSuccess)
                 return Results.BadRequest(result.Errors);
 
-            return Results.Ok(result.Values);
+            return Results.Ok(result.Value);
         }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
 
         vehicles.MapGet("", async (
-                Guid? Id, 
-                string? Type, 
-                double? MaxWeight, 
-                string? Status,
+                Guid? id, 
+                string? type, 
+                double? maxWeight, 
+                string? status,
+                int? page,
+                int? pageSize,
                 IVehicleRepository vehiclesRepository,
                 CancellationToken token) =>
         {
-            var request = new GetRequest(Id, Type, MaxWeight, Status);
+            var request = new GetRequest(id, type, maxWeight, status, new PaginationRequest(page, pageSize));
             var result = await vehiclesRepository.GetVehiclesAsync(request, token);
             
             if (result.IsCancelled)
@@ -68,7 +70,7 @@ public class VehicleEndpoints : IModule
             if (result.Errors?.Any() == true)
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
-            return Results.Ok(result.Values);
+            return Results.Ok(result.Value);
         });
     }
 }
