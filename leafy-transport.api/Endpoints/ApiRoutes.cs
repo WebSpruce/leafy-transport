@@ -14,5 +14,9 @@ public class ApiRoutes
     {
         public const string GroupName = $"{ApiBase}/vehicles";
     }
+    public static class Invoices
+    {
+        public const string GroupName = $"{ApiBase}/invoices";
+    }
    
 }
