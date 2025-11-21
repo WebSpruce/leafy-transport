@@ -77,7 +77,7 @@ public class VehicleRepository : IVehicleRepository
         if (!validationResult.IsValid)
             return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
-        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id);
+        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id, token);
         if (vehicle is null)
             return Result.Failure(new List<object>() { "There is no vehicle with the provided Id" });
 
@@ -98,7 +98,7 @@ public class VehicleRepository : IVehicleRepository
         if (token.IsCancellationRequested)
             return Result.Cancelled();
         
-        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id);
+        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id, token);
         if (vehicle is null)
             return Result.Failure(new List<object>() { "There is no vehicle with the provided Id" });
 

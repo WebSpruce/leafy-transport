@@ -80,7 +80,7 @@ public class UserEndpoints : IModule
             
             return Results.Ok();
         }).RequireAuthorization();
-        
+
         users.MapGet("", async (
             string? id,
             string? email,
@@ -125,12 +125,12 @@ public class UserEndpoints : IModule
                 };
                 return Results.Problem(problem);
             }
-            
+
             if (result.Errors?.Any() == true)
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok(result.Value);
-        });
+        }).RequireAuthorization();
 
         users.MapPatch("/{id}", async (
             string id,
@@ -160,7 +160,7 @@ public class UserEndpoints : IModule
                 return Results.NotFound("There is no user with provided Id");
 
             return Results.Ok();
-        });
+        }).RequireAuthorization();
 
         users.MapDelete("/{id}", async (
             string id,
@@ -177,6 +177,6 @@ public class UserEndpoints : IModule
                 return Results.NotFound("There is no user with provided Id");
             
             return Results.Ok();
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
     }
 }

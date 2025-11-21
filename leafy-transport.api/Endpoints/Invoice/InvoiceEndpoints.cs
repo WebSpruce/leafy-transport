@@ -1,5 +1,6 @@
 using leafy_transport.api.Interfaces;
 using leafy_transport.api.Interfaces.Invoice;
+using leafy_transport.models.Models;
 
 namespace leafy_transport.api.Endpoints.Invoice;
 
@@ -37,7 +38,7 @@ public class InvoiceEndpoints : IModule
                 return Results.BadRequest(result.Errors);
 
             return Results.Ok(result.Value);
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
         
         invoices.MapGet("", async (
             Guid? id, 
@@ -75,7 +76,7 @@ public class InvoiceEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok(result.Value);
-        });
+        }).RequireAuthorization();
         
         invoices.MapPatch("/{id}", async (
             Guid id,
@@ -105,7 +106,7 @@ public class InvoiceEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
         
         invoices.MapDelete("/{id}", async (
             Guid id,
@@ -122,6 +123,6 @@ public class InvoiceEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
     }
 }

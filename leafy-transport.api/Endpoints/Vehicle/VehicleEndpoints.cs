@@ -37,7 +37,7 @@ public class VehicleEndpoints : IModule
                 return Results.BadRequest(result.Errors);
 
             return Results.Ok(result.Value);
-        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
 
         vehicles.MapGet("", async (
                 Guid? id, 
@@ -71,7 +71,7 @@ public class VehicleEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok(result.Value);
-        });
+        }).RequireAuthorization();
 
         vehicles.MapPatch("/{id}", async (
             Guid id,
@@ -101,7 +101,7 @@ public class VehicleEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));;
         
         vehicles.MapDelete("/{id}", async (
             Guid id,
@@ -118,6 +118,6 @@ public class VehicleEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));;
     }
 }
