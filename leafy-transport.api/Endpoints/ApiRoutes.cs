@@ -22,5 +22,9 @@ public class ApiRoutes
     {
         public const string GroupName = $"{ApiBase}/products";
     }
+    public static class Clients
+    {
+        public const string GroupName = $"{ApiBase}/clients";
+    }
    
 }

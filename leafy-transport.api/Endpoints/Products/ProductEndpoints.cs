@@ -100,7 +100,7 @@ public class ProductEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
         
         products.MapDelete("/{id}", async (
             Guid id,

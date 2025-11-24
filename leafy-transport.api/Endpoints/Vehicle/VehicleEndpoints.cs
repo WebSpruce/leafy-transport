@@ -28,7 +28,7 @@ public class VehicleEndpoints : IModule
                     Status = StatusCodes.Status400BadRequest,
                     Title = "Validation failed",
                     Detail = "Validation errors occurred",
-                    Instance = "/users"
+                    Instance = "/vehicles"
                 };
                 return Results.Problem(problems);
             }

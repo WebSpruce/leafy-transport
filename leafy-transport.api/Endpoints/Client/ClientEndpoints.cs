@@ -102,7 +102,7 @@ public class ClientEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
+        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin, Roles.Manager));
         
         clients.MapDelete("/{id}", async (
             Guid id,
