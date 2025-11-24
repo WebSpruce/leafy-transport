@@ -43,8 +43,6 @@ public class InvoiceEndpoints : IModule
         invoices.MapGet("", async (
             Guid? id, 
             string? invoiceNumber, 
-            int? totalWeight, 
-            int? totalQuantity, 
             Guid? clientId, 
             Guid? vehicleId , 
             string? status, 
@@ -54,7 +52,7 @@ public class InvoiceEndpoints : IModule
             IInvoiceRepository invoiceRepository,
             CancellationToken token) =>
         {
-            var request = new GetRequest(id, invoiceNumber, totalWeight, totalQuantity, clientId, vehicleId , status, parentInvoiceId, new PaginationRequest(page, pageSize));
+            var request = new GetRequest(id, invoiceNumber, clientId, vehicleId , status, parentInvoiceId, new PaginationRequest(page, pageSize));
             var result = await invoiceRepository.GetAsync(request, token);
             
             if (result.IsCancelled)

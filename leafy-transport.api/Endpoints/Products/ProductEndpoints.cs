@@ -43,12 +43,13 @@ public class ProductEndpoints : IModule
                 Guid? id, 
                 string? name, 
                 int? weight, 
+                double? price,
                 int? page,
                 int? pageSize,
                 IProductRepository productRepository,
                 CancellationToken token) =>
         {
-            var request = new GetRequest(id, name, weight, new PaginationRequest(page, pageSize));
+            var request = new GetRequest(id, name, weight, price, new PaginationRequest(page, pageSize));
             var result = await productRepository.GetAsync(request, token);
             
             if (result.IsCancelled)

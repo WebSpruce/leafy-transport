@@ -17,12 +17,6 @@ public class CreateRequestValidator : AbstractValidator<CreateRequest>
         
         RuleFor(x => x.Status)
             .MinimumLength(2).WithMessage("Status must contain at least 2 characters");
-        
-        RuleFor(x => x.TotalWeight)
-            .GreaterThan(0).WithMessage("Total Weight should be greater than 0");
-        
-        RuleFor(x => x.TotalQuantity)
-            .GreaterThan(0).WithMessage("Total Quantity should be greater than 0");
 
         RuleFor(x => x.ClientId)
             .NotNull().WithMessage("ClientId cannot be null")

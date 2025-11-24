@@ -22,5 +22,41 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             new IdentityRole { Id = "00000000-2222-0000-0000-000000000002", Name = models.Models.Roles.Manager, NormalizedName = "MANAGER" },
             new IdentityRole { Id = "00000000-3333-0000-0000-000000000003", Name = models.Models.Roles.Employee, NormalizedName = "EMPLOYEE" }
         );
+
+        builder.Entity<Invoice>()
+            .HasMany(i => i.InvoiceItems)
+            .WithOne()
+            .HasForeignKey(ii => ii.InvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Invoice>()
+            .HasOne<Client>()
+            .WithMany()
+            .HasForeignKey(i => i.ClientId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<Invoice>()
+            .HasOne<Vehicle>()
+            .WithMany()
+            .HasForeignKey(i => i.VehicleId)
+            .OnDelete(DeleteBehavior.SetNull);
+        
+        builder.Entity<Product>()
+            .HasMany(p => p.InvoiceItems)
+            .WithOne()
+            .HasForeignKey(ii => ii.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<InvoiceItem>()
+            .HasOne<Invoice>()
+            .WithMany(i => i.InvoiceItems)
+            .HasForeignKey(ii => ii.InvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<InvoiceItem>()
+            .HasOne<Product>()
+            .WithMany(p => p.InvoiceItems)
+            .HasForeignKey(ii => ii.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -34,7 +34,8 @@ public class ProductRepository : IProductRepository
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
-            TotalWeight = request.Weight
+            Weight = request.Weight,
+            Price = request.Price
         };
         
         await _dbContext.Products.AddAsync(product, token);
@@ -57,7 +58,8 @@ public class ProductRepository : IProductRepository
             .Where(product => 
                 (request.Id == null || product.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.Name) || product.Name.ToLower() == request.Name.ToLower()) &&
-                (request.Weight == null || product.TotalWeight == request.Weight.Value)
+                (request.Weight == null || product.Weight == request.Weight.Value) &&
+                (request.Price == null || (int)product.Price == (int)request.Price.Value)
             ).AsQueryable();
 
         var result = await Pagination.Paginate(products, request.pagination?.pageNumber, request.pagination?.pageSize, token);
@@ -81,7 +83,9 @@ public class ProductRepository : IProductRepository
         if (request.Name is not null)
             product.Name = request.Name;
         if (request.Weight is not null)
-            product.TotalWeight = (int)request.Weight;
+            product.Weight = (int)request.Weight;
+        if (request.Price is not null)
+            product.Price = (double)request.Price;
 
 
         await _dbContext.SaveChangesAsync(token);

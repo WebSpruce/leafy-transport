@@ -35,8 +35,6 @@ public class InvoiceRepository : IInvoiceRepository
         {
             Id = Guid.NewGuid(),
             InvoiceNumber = request.InvoiceNumber, 
-            TotalWeight = request.TotalWeight, 
-            TotalQuantity = request.TotalQuantity, 
             ClientId = request.ClientId, 
             VehicleId = request.VehicleId ,
             Status = request.Status,
@@ -63,8 +61,6 @@ public class InvoiceRepository : IInvoiceRepository
             .Where(invoice => 
                 (request.Id == null || invoice.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.InvoiceNumber) || invoice.InvoiceNumber.ToLower() == request.InvoiceNumber.ToLower()) &&
-                (request.TotalWeight == null || invoice.TotalWeight == request.TotalWeight.Value) &&
-                (request.TotalQuantity == null || invoice.TotalQuantity == request.TotalQuantity.Value) &&
                 (request.ClientId == null || invoice.ClientId == request.ClientId) &&
                 (request.VehicleId == null || invoice.VehicleId == request.VehicleId) &&
                 (string.IsNullOrEmpty(request.Status) || invoice.Status.ToLower() == request.Status.ToLower()) &&
@@ -91,10 +87,6 @@ public class InvoiceRepository : IInvoiceRepository
 
         if (request.InvoiceNumber is not null)
             invoice.InvoiceNumber = request.InvoiceNumber;
-        if (request.TotalWeight is not null)
-            invoice.TotalWeight = (int)request.TotalWeight;
-        if (request.TotalQuantity is not null)
-            invoice.TotalQuantity = (int)request.TotalQuantity;
         if (request.ClientId is not null)
             invoice.ClientId = (Guid)request.ClientId;
         if (request.VehicleId is not null)

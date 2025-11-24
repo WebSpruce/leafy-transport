@@ -14,13 +14,5 @@ public class GetRequestValidator : AbstractValidator<GetRequest>
         RuleFor(x => x.Status)
             .MinimumLength(2).WithMessage("Status must contain at least 2 characters")
             .When(x => !string.IsNullOrWhiteSpace(x.Status));
-        
-        RuleFor(x => x.TotalWeight)
-            .GreaterThan(0).WithMessage("Total Weight should be greater than 0")
-            .When(x => x.TotalWeight != null);
-        
-        RuleFor(x => x.TotalQuantity)
-            .GreaterThan(0).WithMessage("Total Quantity should be greater than 0")
-            .When(x => x.TotalQuantity != null);
     }
 }
