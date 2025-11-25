@@ -79,7 +79,7 @@ public class InvoiceRepository : IInvoiceRepository
         
         var validationResult = await _validatorUpdate.ValidateAsync(request, token);
         if(!validationResult.IsValid)
-            return Result.ValidationFailure<models.Models.Vehicle>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
+            return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
         
         var invoice = await _dbContext.Invoices.FirstOrDefaultAsync(x => x.Id == id, token);
         if (invoice is null)
