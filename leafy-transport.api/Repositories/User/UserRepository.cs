@@ -152,7 +152,7 @@ public class UserRepository : IUserRepository
         if (token.IsCancellationRequested)
             return Result.Cancelled<PagedList<ApplicationUser>>();
 
-        var validationResult = _validatorGet.Validate(request);
+        var validationResult = await _validatorGet.ValidateAsync(request, token);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<PagedList<ApplicationUser>>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
@@ -160,9 +160,13 @@ public class UserRepository : IUserRepository
         
         if (!string.IsNullOrEmpty(request.RoleName))
         {
-            var usersInRole = await _userManager.GetUsersInRoleAsync(request.RoleName);
-            users = usersInRole.AsQueryable();
+            var roleUsers = await _userManager.GetUsersInRoleAsync(request.RoleName);
+            var roleUserIds = roleUsers.Select(u => u.Id).ToList();
+            users = users.Where(user => roleUserIds.Contains(user.Id));
         }
+        
+        if (request.ClientId.HasValue && request.ClientId != Guid.Empty)
+            users = users.Where(user => user.Clients.Any(c => c.Id == request.ClientId));
         
         users = users
             .Where(user =>

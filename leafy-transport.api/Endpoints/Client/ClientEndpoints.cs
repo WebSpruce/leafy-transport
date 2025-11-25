@@ -45,12 +45,13 @@ public class ClientEndpoints : IModule
                 string? address, 
                 string? postcode,
                 string? location,
+                string? userId,
                 int? page,
                 int? pageSize,
                 IClientRepository clientRepository,
                 CancellationToken token) =>
         {
-            var request = new GetRequest(id, city, address, postcode, location, new PaginationRequest(page, pageSize));
+            var request = new GetRequest(id, city, address, postcode, location, userId, new PaginationRequest(page, pageSize));
             var result = await clientRepository.GetAsync(request, token);
             
             if (result.IsCancelled)

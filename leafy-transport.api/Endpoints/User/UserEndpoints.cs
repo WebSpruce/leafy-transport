@@ -91,6 +91,7 @@ public class UserEndpoints : IModule
             Guid? vehicleId,
             string? roleName,
             DateTime? createdAt,
+            Guid? clientId,
             int? page,
             int? pageSize,
             [FromServices] IUserRepository userRepository,
@@ -107,6 +108,7 @@ public class UserEndpoints : IModule
                 VehicleId: vehicleId,
                 RoleName: roleName,
                 CreatedAt: createdAt,
+                ClientId: clientId,
                 new PaginationRequest(page, pageSize)
             );
             var result = await userRepository.GetAllAsync(request, token);

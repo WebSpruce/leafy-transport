@@ -1,12 +1,17 @@
 using FluentValidation;
+using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints.User;
+using Microsoft.EntityFrameworkCore;
 
 namespace leafy_transport.api.Validators.User;
 
 public class GetRequestValidator : AbstractValidator<GetRequest>
 {
-    public GetRequestValidator()
+    private readonly ApplicationDbContext _context;
+    public GetRequestValidator(ApplicationDbContext context)
     {
+        _context = context;
+        
         RuleFor(x => x.FirstName)
             .MinimumLength(2).WithMessage("FirstName must contain at least 2 characters")
             .When(x => !string.IsNullOrWhiteSpace(x.FirstName));
@@ -27,5 +32,15 @@ public class GetRequestValidator : AbstractValidator<GetRequest>
             .MinimumLength(9)
             .WithMessage("Phone number must contain at least 9 digits")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
+        
+        RuleFor(x => x.ClientId)
+            .MustAsync(async (clientId, ct) =>
+            {
+                if (!clientId.HasValue || clientId == Guid.Empty)
+                    return true;
+                return await _context.Clients.AnyAsync(c => c.Id == clientId, ct);
+            })
+            .WithMessage("The specified Client does not exist")
+            .When(x => x.ClientId.HasValue && x.ClientId != Guid.Empty);
     }
 }

@@ -50,12 +50,17 @@ public class ClientRepository : IClientRepository
         if (token.IsCancellationRequested)
             return Result.Cancelled<PagedList<models.Models.Client>>();
 
-        var validationResult = _validatorGet.Validate(request);
+        var validationResult =await  _validatorGet.ValidateAsync(request, token);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<PagedList<models.Models.Client>>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
-        var clients = _dbContext.Clients
-            .AsNoTracking()
+        IQueryable<models.Models.Client> clients = _dbContext.Clients.AsNoTracking();
+        
+        if (!string.IsNullOrEmpty(request.UserId))
+            clients = clients.Where(client => client.Users.Any(u => u.Id == request.UserId));
+        
+        
+        clients = clients
             .Where(client => 
                 (request.Id == null || client.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.City) || client.City.ToLower() == request.City.ToLower()) &&

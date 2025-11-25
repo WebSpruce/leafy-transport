@@ -1,12 +1,18 @@
 using FluentValidation;
+using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints.Client;
+using leafy_transport.models.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace leafy_transport.api.Validators.Client;
 
 public class GetRequestValidator : AbstractValidator<GetRequest>
 {
-    public GetRequestValidator()
+    private readonly UserManager<ApplicationUser> _userManager;
+    public GetRequestValidator(UserManager<ApplicationUser> userManager)
     {
+        _userManager = userManager;
+        
         RuleFor(x => x.City)
             .MinimumLength(1)
             .WithMessage("City must contain at least 1 characters")
@@ -26,5 +32,16 @@ public class GetRequestValidator : AbstractValidator<GetRequest>
             .MinimumLength(5)
             .WithMessage("Location must contain at least 5 characters")
             .When(x => !string.IsNullOrEmpty(x.Location));
+        
+        RuleFor(x => x.UserId)
+            .MustAsync(async (userId, ct) =>
+            {
+                if (string.IsNullOrEmpty(userId))
+                    return true;
+                var user = await _userManager.FindByIdAsync(userId);
+                return user != null;
+            })
+            .WithMessage("The specified User does not exist")
+            .When(x => !string.IsNullOrEmpty(x.UserId));
     }
 }
