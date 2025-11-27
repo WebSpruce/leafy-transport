@@ -1,12 +1,26 @@
 using FluentValidation;
+using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints.Products;
+using Microsoft.EntityFrameworkCore;
 
 namespace leafy_transport.api.Validators.Product;
 
 public class CreateRequestValidator : AbstractValidator<CreateRequest>
 {
-    public CreateRequestValidator()
+    private readonly ApplicationDbContext _context;
+    public CreateRequestValidator(ApplicationDbContext context)
     {
+        _context = context;
+        
+        RuleFor(x => x.CompanyId)
+            .NotNull().WithMessage("CompanyId cannot be null")
+            .NotEqual(Guid.Empty).WithMessage("CompanyId cannot be empty")
+            .MustAsync(async (companyId, cancellationToken) =>
+            {
+                return await _context.Companies.AnyAsync(v => v.Id == companyId, cancellationToken);
+            })
+            .WithMessage("The specified Company does not exist.");
+        
         RuleFor(x => x.Name)
             .MinimumLength(2).WithMessage("Name must contain at least 2 characters");
 

@@ -4,12 +4,14 @@ using leafy_transport.api.Data;
 using leafy_transport.api.Endpoints;
 using leafy_transport.api.Infrastructure;
 using leafy_transport.api.Interfaces.Client;
+using leafy_transport.api.Interfaces.Company;
 using leafy_transport.api.Interfaces.Invoice;
 using leafy_transport.api.Interfaces.InvoiceItem;
 using leafy_transport.api.Interfaces.Product;
 using leafy_transport.api.Interfaces.User;
 using leafy_transport.api.Interfaces.Vehicle;
 using leafy_transport.api.Repositories.Client;
+using leafy_transport.api.Repositories.Company;
 using leafy_transport.api.Repositories.Invoice;
 using leafy_transport.api.Repositories.InvoiceItem;
 using leafy_transport.api.Repositories.Product;
@@ -67,6 +69,7 @@ public class Program
         builder.Services.AddScoped<IProductRepository, ProductRepository>();
         builder.Services.AddScoped<IClientRepository, ClientRepository>();
         builder.Services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
+        builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 
         var app = builder.Build();
         

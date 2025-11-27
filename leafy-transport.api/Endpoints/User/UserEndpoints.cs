@@ -83,6 +83,7 @@ public class UserEndpoints : IModule
 
         users.MapGet("", async (
             string? id,
+            Guid? companyId,
             string? email,
             string? firstName,
             string? lastName,
@@ -100,6 +101,7 @@ public class UserEndpoints : IModule
         {
             var request = new GetRequest(
                 Id: id,
+                CompanyId: companyId,
                 Email: email,
                 FirstName: firstName,
                 LastName: lastName,
@@ -166,11 +168,12 @@ public class UserEndpoints : IModule
 
         users.MapDelete("/{id}", async (
             string id,
+            Guid companyId,
             IUserRepository userRepository,
             CancellationToken token
         ) =>
         {
-            var result = await userRepository.DeleteAsync(id, token);
+            var result = await userRepository.DeleteAsync(id, companyId, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);

@@ -42,6 +42,7 @@ public class InvoiceEndpoints : IModule
         
         invoices.MapGet("", async (
             Guid? id, 
+            Guid companyId,
             string? invoiceNumber, 
             Guid? clientId, 
             Guid? vehicleId , 
@@ -52,7 +53,7 @@ public class InvoiceEndpoints : IModule
             IInvoiceRepository invoiceRepository,
             CancellationToken token) =>
         {
-            var request = new GetRequest(id, invoiceNumber, clientId, vehicleId , status, parentInvoiceId, new PaginationRequest(page, pageSize));
+            var request = new GetRequest(id, companyId, invoiceNumber, clientId, vehicleId , status, parentInvoiceId, new PaginationRequest(page, pageSize));
             var result = await invoiceRepository.GetAsync(request, token);
             
             if (result.IsCancelled)
@@ -108,11 +109,12 @@ public class InvoiceEndpoints : IModule
         
         invoices.MapDelete("/{id}", async (
             Guid id,
+            Guid companyId,
             IInvoiceRepository invoiceRepository,
             CancellationToken token
         ) =>
         {
-            var result = await invoiceRepository.DeleteAsync(id, token);
+            var result = await invoiceRepository.DeleteAsync(id, companyId, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);

@@ -6,6 +6,7 @@ namespace leafy_transport.models.Models;
 public class Invoice
 {
     public required Guid Id { get; set; } = Guid.NewGuid();
+    public required Guid CompanyId { get; set; }
     [MaxLength(100)]
     public required string InvoiceNumber { get; set; }
     public required Guid ClientId { get; set; }

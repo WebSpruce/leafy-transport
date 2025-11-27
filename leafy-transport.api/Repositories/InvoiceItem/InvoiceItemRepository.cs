@@ -51,7 +51,7 @@ public class InvoiceItemRepository : IInvoiceItemRepository
         if(token.IsCancellationRequested)
             return Result.Cancelled<PagedList<models.Models.InvoiceItem>>();    
         
-        var validationResult = _validatorGet.Validate(request);
+        var validationResult = await _validatorGet.ValidateAsync(request);
         if(!validationResult.IsValid)
             return Result.ValidationFailure<PagedList<models.Models.InvoiceItem>>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
         

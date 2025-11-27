@@ -8,5 +8,6 @@ public class ApplicationUser : IdentityUser
     public required string LastName { get; set; }
     public required DateTime CreatedAt { get; set; }
     public Guid? VehicleId { get; set; }
+    public Guid? CompanyId { get; set; }
     public List<Client> Clients { get; set; } = [];
 }

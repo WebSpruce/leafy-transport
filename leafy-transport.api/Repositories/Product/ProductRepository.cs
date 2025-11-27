@@ -26,13 +26,14 @@ public class ProductRepository : IProductRepository
         if (token.IsCancellationRequested)
             return Result.Cancelled<models.Models.Product>();
             
-        var validationResult = _validatorCreate.Validate(request);
+        var validationResult = await _validatorCreate.ValidateAsync(request, token);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<models.Models.Product>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
         var product = new models.Models.Product()
         {
             Id = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
             Name = request.Name,
             Weight = request.Weight,
             Price = request.Price
@@ -56,6 +57,7 @@ public class ProductRepository : IProductRepository
         var products = _dbContext.Products
             .AsNoTracking()
             .Where(product => 
+                product.CompanyId == request.CompanyId &&
                 (request.Id == null || product.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.Name) || product.Name.ToLower() == request.Name.ToLower()) &&
                 (request.Weight == null || product.Weight == request.Weight.Value) &&
@@ -76,9 +78,9 @@ public class ProductRepository : IProductRepository
         if (!validationResult.IsValid)
             return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
-        var product = await _dbContext.Products.FirstOrDefaultAsync(x => x.Id == id, token);
+        var product = await _dbContext.Products.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == request.CompanyId, token);
         if (product is null)
-            return Result.Failure(new List<object>() { "There is no product with the provided Id" });
+            return Result.Failure(new List<object>() { "Product not found or you do not have access" });
 
         if (request.Name is not null)
             product.Name = request.Name;
@@ -93,14 +95,14 @@ public class ProductRepository : IProductRepository
         return Result.Success();
     }
 
-    public async Task<Result> DeleteAsync(Guid id, CancellationToken token)
+    public async Task<Result> DeleteAsync(Guid id, Guid companyId, CancellationToken token)
     {
         if (token.IsCancellationRequested)
             return Result.Cancelled();
         
-        var product = await _dbContext.Products.FirstOrDefaultAsync(x => x.Id == id, token);
+        var product = await _dbContext.Products.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId, token);
         if (product is null)
-            return Result.Failure(new List<object>() { "There is no product with the provided Id" });
+            return Result.Failure(new List<object>() { "Product not found or you do not have access" });
 
         _dbContext.Products.Remove(product);
 

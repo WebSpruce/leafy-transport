@@ -5,6 +5,7 @@ namespace leafy_transport.models.Models;
 public class Vehicle
 {
     public required Guid Id { get; set; } = Guid.NewGuid();
+    public required Guid CompanyId { get; set; }
     [MaxLength(30)]
     public required string Type { get; set; }
     public required double MaxWeight { get; set; }

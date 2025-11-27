@@ -27,13 +27,14 @@ public class VehicleRepository : IVehicleRepository
         if (token.IsCancellationRequested)
             return Result.Cancelled<models.Models.Vehicle>();
             
-        var validationResult = _validatorCreate.Validate(request);
+        var validationResult = await _validatorCreate.ValidateAsync(request, token);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<models.Models.Vehicle>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
         var vehicle = new models.Models.Vehicle()
         {
             Id = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
             Status = request.Status,
             Type = request.Type,
             MaxWeight = request.MaxWeight
@@ -53,10 +54,11 @@ public class VehicleRepository : IVehicleRepository
         var validationResult = _validatorGet.Validate(request);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<PagedList<models.Models.Vehicle>>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
-
+        
         var vehicles = _dbContext.Vehicles
             .AsNoTracking()
             .Where(vehicle => 
+                vehicle.CompanyId == request.CompanyId &&
                 (request.Id == null || vehicle.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.Type) || vehicle.Type.ToLower() == request.Type.ToLower()) &&
                 (string.IsNullOrEmpty(request.Status) || vehicle.Status.ToLower() == request.Status.ToLower()) &&
@@ -77,9 +79,9 @@ public class VehicleRepository : IVehicleRepository
         if (!validationResult.IsValid)
             return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
-        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id, token);
+        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == request.CompanyId, token);
         if (vehicle is null)
-            return Result.Failure(new List<object>() { "There is no vehicle with the provided Id" });
+            return Result.Failure(new List<object>() { "Vehicle not found or you do not have access" });
 
         if (request.Type is not null)
             vehicle.Type = request.Type;
@@ -93,14 +95,14 @@ public class VehicleRepository : IVehicleRepository
         return Result.Success();
     }
 
-    public async Task<Result> DeleteVehicleAsync(Guid id, CancellationToken token)
+    public async Task<Result> DeleteVehicleAsync(Guid id, Guid companyId, CancellationToken token)
     {
         if (token.IsCancellationRequested)
             return Result.Cancelled();
         
-        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id, token);
+        var vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId, token);
         if (vehicle is null)
-            return Result.Failure(new List<object>() { "There is no vehicle with the provided Id" });
+            return Result.Failure(new List<object>() { "Client not found or you do not have access" });
 
         _dbContext.Vehicles.Remove(vehicle);
 

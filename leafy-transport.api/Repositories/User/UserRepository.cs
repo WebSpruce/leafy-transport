@@ -126,10 +126,10 @@ public class UserRepository : IUserRepository
         if (!validationResult.IsValid)
             return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id, token);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == request.CompanyId, token);
 
         if (user is null)
-            return Result.Failure(new List<object>() { "There is no user with provided Id" });
+            return Result.Failure(new List<object>() { "User not found or you do not have access" });
 
         if (request.FirstName is not null)
             user.FirstName = request.FirstName;
@@ -170,6 +170,7 @@ public class UserRepository : IUserRepository
         
         users = users
             .Where(user =>
+                (request.CompanyId == null || user.CompanyId == request.CompanyId) &&
                 (string.IsNullOrEmpty(request.Id) || user.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.UserName) || user.UserName.ToLower() == request.UserName.ToLower()) &&
                 (string.IsNullOrEmpty(request.FirstName) || user.FirstName.ToLower() == request.FirstName.ToLower()) &&
@@ -186,15 +187,15 @@ public class UserRepository : IUserRepository
         return Result.Success(result);
     }
     
-    public async Task<Result> DeleteAsync(string id, CancellationToken token)
+    public async Task<Result> DeleteAsync(string id, Guid companyId, CancellationToken token)
     {
         if (token.IsCancellationRequested)
             return Result.Cancelled();
         
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id, token);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId, token);
 
         if (user is null)
-            return Result.Failure(new List<object>() { "There is no user with provided Id" });
+            return Result.Failure(new List<object>() { "User not found or you do not have access" });
 
         _dbContext.Users.Remove(user);
 

@@ -41,6 +41,7 @@ public class ClientEndpoints : IModule
 
         clients.MapGet("", async (
                 Guid? id, 
+                Guid companyId,
                 string? city, 
                 string? address, 
                 string? postcode,
@@ -51,7 +52,7 @@ public class ClientEndpoints : IModule
                 IClientRepository clientRepository,
                 CancellationToken token) =>
         {
-            var request = new GetRequest(id, city, address, postcode, location, userId, new PaginationRequest(page, pageSize));
+            var request = new GetRequest(id, companyId, city, address, postcode, location, userId, new PaginationRequest(page, pageSize));
             var result = await clientRepository.GetAsync(request, token);
             
             if (result.IsCancelled)
@@ -107,11 +108,12 @@ public class ClientEndpoints : IModule
         
         clients.MapDelete("/{id}", async (
             Guid id,
+            Guid companyId,
             IClientRepository clientRepository,
             CancellationToken token
         ) =>
         {
-            var result = await clientRepository.DeleteAsync(id, token);
+            var result = await clientRepository.DeleteAsync(id, companyId, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);

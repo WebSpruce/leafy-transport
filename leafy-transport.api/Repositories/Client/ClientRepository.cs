@@ -26,13 +26,14 @@ public class ClientRepository : IClientRepository
         if (token.IsCancellationRequested)
             return Result.Cancelled<models.Models.Client>();
             
-        var validationResult = _validatorCreate.Validate(request);
+        var validationResult = await _validatorCreate.ValidateAsync(request, token);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<models.Models.Client>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
         var client = new models.Models.Client()
         {
             Id = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
             City = request.City,
             Address = request.Address,
             Postcode = request.PostCode,
@@ -53,12 +54,13 @@ public class ClientRepository : IClientRepository
         var validationResult =await  _validatorGet.ValidateAsync(request, token);
         if (!validationResult.IsValid)
             return Result.ValidationFailure<PagedList<models.Models.Client>>(new Dictionary<string, string[]>(validationResult.ToDictionary()));
-
-        IQueryable<models.Models.Client> clients = _dbContext.Clients.AsNoTracking();
+        
+        IQueryable<models.Models.Client> clients = _dbContext.Clients
+            .AsNoTracking()
+            .Where(c => c.CompanyId == request.CompanyId);
         
         if (!string.IsNullOrEmpty(request.UserId))
             clients = clients.Where(client => client.Users.Any(u => u.Id == request.UserId));
-        
         
         clients = clients
             .Where(client => 
@@ -67,7 +69,7 @@ public class ClientRepository : IClientRepository
                 (string.IsNullOrEmpty(request.Address) || client.Address.ToLower() == request.Address.ToLower()) &&
                 (string.IsNullOrEmpty(request.PostCode) || client.Postcode.ToLower() == request.PostCode.ToLower()) &&
                 (string.IsNullOrEmpty(request.Location) || client.Location.ToLower() == request.Location.ToLower())
-            ).AsQueryable();
+            );
 
         var result = await Pagination.Paginate(clients, request.pagination?.pageNumber, request.pagination?.pageSize, token);
 
@@ -83,9 +85,9 @@ public class ClientRepository : IClientRepository
         if (!validationResult.IsValid)
             return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
 
-        var client = await _dbContext.Clients.FirstOrDefaultAsync(x => x.Id == id, token);
+        var client = await _dbContext.Clients.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == request.CompanyId, token);
         if (client is null)
-            return Result.Failure(new List<object>() { "There is no client with the provided Id" });
+            return Result.Failure(new List<object>() { "Client not found or you do not have access" });
 
         if (request.City is not null)
             client.City = request.City;
@@ -101,14 +103,14 @@ public class ClientRepository : IClientRepository
         return Result.Success();
     }
 
-    public async Task<Result> DeleteAsync(Guid id, CancellationToken token)
+    public async Task<Result> DeleteAsync(Guid id, Guid companyId, CancellationToken token)
     {
         if (token.IsCancellationRequested)
             return Result.Cancelled();
         
-        var client = await _dbContext.Clients.FirstOrDefaultAsync(x => x.Id == id, token);
+        var client = await _dbContext.Clients.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId, token);
         if (client is null)
-            return Result.Failure(new List<object>() { "There is no client with the provided Id" });
+            return Result.Failure(new List<object>() { "Client not found or you do not have access" });
 
         _dbContext.Clients.Remove(client);
 

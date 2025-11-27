@@ -34,6 +34,7 @@ public class InvoiceRepository : IInvoiceRepository
         var invoice = new models.Models.Invoice()
         {
             Id = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
             InvoiceNumber = request.InvoiceNumber, 
             ClientId = request.ClientId, 
             VehicleId = request.VehicleId ,
@@ -59,6 +60,7 @@ public class InvoiceRepository : IInvoiceRepository
         var invoices = _dbContext.Invoices
             .AsNoTracking()
             .Where(invoice => 
+                invoice.CompanyId == request.CompanyId &&
                 (request.Id == null || invoice.Id == request.Id) &&
                 (string.IsNullOrEmpty(request.InvoiceNumber) || invoice.InvoiceNumber.ToLower() == request.InvoiceNumber.ToLower()) &&
                 (request.ClientId == null || invoice.ClientId == request.ClientId) &&
@@ -81,9 +83,9 @@ public class InvoiceRepository : IInvoiceRepository
         if(!validationResult.IsValid)
             return Result.ValidationFailure(new Dictionary<string, string[]>(validationResult.ToDictionary()));
         
-        var invoice = await _dbContext.Invoices.FirstOrDefaultAsync(x => x.Id == id, token);
+        var invoice = await _dbContext.Invoices.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == request.CompanyId, token);
         if (invoice is null)
-            return Result.Failure(new List<object>() { "There is no invoice with the provided Id" });
+            return Result.Failure(new List<object>() { "Invoice not found or you do not have access" });
 
         if (request.InvoiceNumber is not null)
             invoice.InvoiceNumber = request.InvoiceNumber;
@@ -101,14 +103,14 @@ public class InvoiceRepository : IInvoiceRepository
         return Result.Success();
     }
 
-    public async Task<Result> DeleteAsync(Guid id, CancellationToken token)
+    public async Task<Result> DeleteAsync(Guid id, Guid companyId, CancellationToken token)
     {
         if(token.IsCancellationRequested)
             return Result.Cancelled();    
         
-        var invoice = await _dbContext.Invoices.FirstOrDefaultAsync(x => x.Id == id, token);
+        var invoice = await _dbContext.Invoices.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId, token);
         if (invoice is null)
-            return Result.Failure(new List<object>() { "There is no invoice with the provided Id" });
+            return Result.Failure(new List<object>() { "Invoice not found or you do not have access" });
 
         _dbContext.Invoices.Remove(invoice);
 

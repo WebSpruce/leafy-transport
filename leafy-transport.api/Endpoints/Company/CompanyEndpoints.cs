@@ -1,26 +1,27 @@
 using leafy_transport.api.Interfaces;
-using leafy_transport.api.Interfaces.Vehicle;
+using leafy_transport.api.Interfaces.Company;
 using leafy_transport.models.Models;
 
-namespace leafy_transport.api.Endpoints.Vehicle;
+namespace leafy_transport.api.Endpoints.Company;
 
-public class VehicleEndpoints : IModule
+public class CompanyEndpoints : IModule
 {
     public void RegisterEndpoints(IEndpointRouteBuilder app)
     {
-        var vehicles = app.MapGroup(ApiRoutes.Vehicles.GroupName)
-            .WithTags("Vehicles");
-        
-        vehicles.MapPost("", async (
-            CreateRequest request, 
-            IVehicleRepository vehiclesRepository,
-            CancellationToken token) =>
+        var companies = app.MapGroup(ApiRoutes.Companies.GroupName)
+            .WithTags("Companies");
+
+        companies.MapPost("", async (
+            CreateRequest request,
+            ICompanyRepository companyRepository,
+            CancellationToken token
+            ) =>
         {
-            var result = await vehiclesRepository.CreateVehiclesAsync(request, token);
+            var result = await companyRepository.CreateAsync(request, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);
-
+            
             if (result.IsValidationFailure)
             {
                 var problems = new HttpValidationProblemDetails(result.ValidationErrors)
@@ -28,30 +29,32 @@ public class VehicleEndpoints : IModule
                     Status = StatusCodes.Status400BadRequest,
                     Title = "Validation failed",
                     Detail = "Validation errors occurred",
-                    Instance = "/vehicles"
+                    Instance = "/companies"
                 };
                 return Results.Problem(problems);
             }
-
+            
+            if (result.Errors?.Any() == true)
+                return Results.NotFound(result.Errors?.FirstOrDefault());
+            
             if (!result.IsSuccess)
                 return Results.BadRequest(result.Errors);
 
             return Results.Ok(result.Value);
-        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));
-
-        vehicles.MapGet("", async (
-                Guid? id, 
-                Guid companyId,
-                string? type, 
-                double? maxWeight, 
-                string? status,
-                int? page,
-                int? pageSize,
-                IVehicleRepository vehiclesRepository,
-                CancellationToken token) =>
+        }).RequireAuthorization();
+        
+        companies.MapGet("", async (
+            Guid? id, 
+            string? name, 
+            string? slug,  
+            string? ownerId, 
+            int? page,
+            int? pageSize,
+            ICompanyRepository companyRepository,
+            CancellationToken token) =>
         {
-            var request = new GetRequest(id, companyId, type, maxWeight, status, new PaginationRequest(page, pageSize));
-            var result = await vehiclesRepository.GetVehiclesAsync(request, token);
+            var request = new GetRequest(id, name, slug, ownerId, new PaginationRequest(page, pageSize));
+            var result = await companyRepository.GetAsync(request, token);
             
             if (result.IsCancelled)
                 return Results.StatusCode(499);
@@ -63,7 +66,7 @@ public class VehicleEndpoints : IModule
                     Status = StatusCodes.Status400BadRequest,
                     Title = "Validation failed",
                     Detail = "Validation errors occurred",
-                    Instance = $"/vehicles"
+                    Instance = $"/companies"
                 };
                 return Results.Problem(problem);
             }
@@ -73,15 +76,15 @@ public class VehicleEndpoints : IModule
 
             return Results.Ok(result.Value);
         }).RequireAuthorization();
-
-        vehicles.MapPatch("/{id}", async (
+        
+        companies.MapPatch("/{id}", async (
             Guid id,
             UpdateRequest request,
-            IVehicleRepository vehicleRepository,
+            ICompanyRepository companyRepository,
             CancellationToken token
-            ) =>
+        ) =>
         {
-            var result = await vehicleRepository.UpdateVehicleAsync(id, request, token);
+            var result = await companyRepository.UpdateAsync(id, request, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);
@@ -93,7 +96,7 @@ public class VehicleEndpoints : IModule
                     Status = StatusCodes.Status400BadRequest,
                     Title = "Validation failed",
                     Detail = "Validation errors occurred",
-                    Instance = $"/vehicles/{id}"
+                    Instance = $"/companies/{id}"
                 };
                 return Results.Problem(problem);
             }
@@ -102,16 +105,16 @@ public class VehicleEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));;
+        }).RequireAuthorization();
         
-        vehicles.MapDelete("/{id}", async (
+        companies.MapDelete("/{id}", async (
             Guid id,
-            Guid companyId,
-            IVehicleRepository vehicleRepository,
+            string userId,
+            ICompanyRepository companyRepository,
             CancellationToken token
         ) =>
         {
-            var result = await vehicleRepository.DeleteVehicleAsync(id, companyId, token);
+            var result = await companyRepository.DeleteAsync(id, userId, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);
@@ -120,6 +123,6 @@ public class VehicleEndpoints : IModule
                 return Results.NotFound(result.Errors?.FirstOrDefault());
 
             return Results.Ok();
-        }).RequireAuthorization(policy => policy.RequireRole(Roles.Admin));;
+        }).RequireAuthorization();
     }
 }

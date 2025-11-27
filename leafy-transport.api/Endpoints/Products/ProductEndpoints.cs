@@ -41,6 +41,7 @@ public class ProductEndpoints : IModule
 
         products.MapGet("", async (
                 Guid? id, 
+                Guid companyId,
                 string? name, 
                 int? weight, 
                 double? price,
@@ -49,7 +50,7 @@ public class ProductEndpoints : IModule
                 IProductRepository productRepository,
                 CancellationToken token) =>
         {
-            var request = new GetRequest(id, name, weight, price, new PaginationRequest(page, pageSize));
+            var request = new GetRequest(id, companyId, name, weight, price, new PaginationRequest(page, pageSize));
             var result = await productRepository.GetAsync(request, token);
             
             if (result.IsCancelled)
@@ -105,11 +106,12 @@ public class ProductEndpoints : IModule
         
         products.MapDelete("/{id}", async (
             Guid id,
+            Guid companyId,
             IProductRepository productRepository,
             CancellationToken token
         ) =>
         {
-            var result = await productRepository.DeleteAsync(id, token);
+            var result = await productRepository.DeleteAsync(id, companyId, token);
 
             if (result.IsCancelled)
                 return Results.StatusCode(499);

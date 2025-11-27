@@ -13,6 +13,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceItem> InvoiceItems { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<Company> Companies { get; set; }
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -58,5 +59,41 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(p => p.InvoiceItems)
             .HasForeignKey(ii => ii.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<Company>()
+            .HasOne(c => c.Owner)
+            .WithMany()  
+            .HasForeignKey(c => c.OwnerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Company>()
+            .HasMany(c => c.Users)
+            .WithOne()  
+            .HasForeignKey(u => u.CompanyId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Company>()
+            .HasMany(c => c.Clients)
+            .WithOne()
+            .HasForeignKey(cl => cl.CompanyId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Company>()
+            .HasMany(c => c.Vehicles)
+            .WithOne()
+            .HasForeignKey(v => v.CompanyId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Company>()
+            .HasMany(c => c.Invoices)
+            .WithOne()
+            .HasForeignKey(i => i.CompanyId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Company>()
+            .HasMany(c => c.Products)
+            .WithOne()
+            .HasForeignKey(p => p.CompanyId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
